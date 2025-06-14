@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+  <title>CSV上传与解析</title>
+  <script>
+    function uploadCSV() {
+      const fileInput = document.getElementById('csvfile');
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      fetch('/upload', { method: 'POST', body: formData })
+        .then(resp => resp.json())
+        .then(data => {
+          const output = document.getElementById('output');
+          output.innerHTML = '';
+          if (data.rows) {
+            data.rows.forEach(row => {
+              output.innerHTML += row.join(', ') + '<br>';
+            });
+          } else {
+            output.innerHTML = '解析失败';
+          }
+        });
+    }
+  </script>
+</head>
+<body>
+  <h2>CSV文件上传</h2>
+  <input type="file" id="csvfile" accept=".csv">
+  <button onclick="uploadCSV()">上传并解析</button>
+  <h3>内容预览：</h3>
+  <div id="output"></div>
+</body>
+</html>
