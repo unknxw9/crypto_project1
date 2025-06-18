@@ -1,41 +1,100 @@
+
 import socket
 import pickle
 import os
-from crypto_utils import load_key, encrypt_with_public_key, sign_with_private_key
+import struct
+from crypto_utils import (
+    load_key, encrypt_with_public_key, sign_with_private_key,
+    encrypt_with_aes
+)
+from Crypto.Random import get_random_bytes
 
 HOST = '127.0.0.1'
 PORT = 12345
 
-# 密钥文件路径
 CLIENT_PRIVATE_KEY = os.path.join('keys', 'client_private.pem')
 SERVER_PUBLIC_KEY = os.path.join('keys', 'server_public.pem')
 
-def prepare_encrypted_message(plain: str) -> bytes:
+
+def send_message(sock, packet_to_send):
+    """封装消息并发送（报头+数据）"""
+    # 计算数据包长度，并打包成8字节的报头
+    msg_len = len(packet_to_send)
+    header = struct.pack('!Q', msg_len)
+
+    # 发送报头，然后发送实际数据
+    sock.sendall(header + packet_to_send)
+
+
+def main():
+    s = socket.socket()
+    s.connect((HOST, PORT))
+
     private_key = load_key(CLIENT_PRIVATE_KEY)
     server_pubkey = load_key(SERVER_PUBLIC_KEY)
-    data_bytes = plain.encode()
-    encrypted = encrypt_with_public_key(data_bytes, server_pubkey)
-    signature = sign_with_private_key(data_bytes, private_key)
-    # 用pickle打包密文和签名
-    packet = pickle.dumps({'encrypted': encrypted, 'signature': signature})
-    return packet
 
-s = socket.socket()
-s.connect((HOST, PORT))
+    try:
+        while True:
+            print("\n请选择操作:")
+            print("1. 发送文字消息 (使用RSA)")
+            print("2. 发送CSV文件 (使用混合加密)")
+            print("q. 退出")
+            choice = input("请输入选项: ")
 
-try:
-    while True:
-        send_msg = input('你要发送给服务器的内容: ')
-        if not send_msg:
-            continue
-        to_send = prepare_encrypted_message(send_msg)
-        s.sendall(to_send)
-        data = s.recv(4096)
-        if not data:
-            print('服务器已断开')
-            break
-        print('服务器:', data.decode(errors='ignore'))
-except Exception as e:
-    print("出现异常:", e)
-finally:
-    s.close()
+            packet_to_send = None  # 初始化
+
+            if choice == '1':
+                msg = input('请输入要发送给服务器的文字内容: ')
+                if not msg: continue
+                data_bytes = msg.encode()
+                encrypted = encrypt_with_public_key(data_bytes, server_pubkey)
+                signature = sign_with_private_key(data_bytes, private_key)
+                packet_to_send = pickle.dumps({
+                    'type': 'text',
+                    'encrypted': encrypted,
+                    'signature': signature
+                })
+
+            elif choice == '2':
+                filepath = input('请输入CSV文件的路径: ')
+                if not os.path.exists(filepath):
+                    print("文件不存在，请重新输入。")
+                    continue
+                with open(filepath, 'rb') as f:
+                    file_content = f.read()
+
+                session_key = get_random_bytes(16)
+                encrypted_content, nonce, tag = encrypt_with_aes(file_content, session_key)
+                encrypted_session_key = encrypt_with_public_key(session_key, server_pubkey)
+                signature = sign_with_private_key(file_content, private_key)
+                packet_to_send = pickle.dumps({
+                    'type': 'file',
+                    'filename': os.path.basename(filepath),
+                    'encrypted_session_key': encrypted_session_key,
+                    'nonce': nonce,
+                    'tag': tag,
+                    'encrypted_content': encrypted_content,
+                    'signature': signature
+                })
+                print(f"文件 '{os.path.basename(filepath)}' 已使用混合加密发送。")
+
+            elif choice.lower() == 'q':
+                break
+            else:
+                print("无效选项。")
+                continue
+
+            if packet_to_send:
+                send_message(s, packet_to_send)
+
+            response = s.recv(4096)
+            print('服务器回应:', response.decode(errors='ignore'))
+
+    except Exception as e:
+        print(f"出现异常: {e}")
+    finally:
+        s.close()
+
+
+if __name__ == "__main__":
+    main()
