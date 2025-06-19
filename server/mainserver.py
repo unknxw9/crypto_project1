@@ -2,11 +2,12 @@
 import socket
 import pickle
 import os
-import struct  # <-- 1. 导入 struct 模块
+import struct
 from crypto_utils import (
     load_key, decrypt_with_private_key, verify_signature,
     decrypt_with_aes
 )
+from colorama import Fore, Style, init
 
 HOST = '127.0.0.1'
 PORT = 12345
@@ -93,7 +94,7 @@ def main():
     s.bind((HOST, PORT))
     s.listen(1)
 
-    print(f"服务器启动，在 {HOST}:{PORT} 等待连接...")
+    print(Style.BRIGHT + Fore.CYAN + f"Server starts，waiting connection on: {HOST}:{PORT}")
     conn, addr = s.accept()
     print(f"连接来自: {addr}")
 
@@ -102,11 +103,11 @@ def main():
             # 获取完整消息
             data = recv_message(conn)
             if not data:
-                print("客户端已断开")
+                print(Fore.YELLOW + "客户端已断开")
                 break
 
             msg, ok = process_packet(data)
-            print('处理结果:', msg)
+            print(Style.BRIGHT + Fore.CYAN + '处理结果:', msg)
 
             if ok:
                 conn.sendall(b'Data received and processed successfully.')
@@ -114,11 +115,11 @@ def main():
                 conn.sendall(b'Error processing data.')
 
     except Exception as e:
-        print(f"出现异常: {e}")
+        print(Fore.RED + f"ERROR: {e}")
     finally:
         conn.close()
         s.close()
-        print("服务器已关闭。")
+        print(Fore.BLUE + "Server has closed.")
 
 
 if __name__ == "__main__":

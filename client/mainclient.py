@@ -8,6 +8,7 @@ from crypto_utils import (
     encrypt_with_aes
 )
 from Crypto.Random import get_random_bytes
+from colorama import init, Fore, Style
 
 HOST = '127.0.0.1'
 PORT = 12345
@@ -35,16 +36,17 @@ def main():
 
     try:
         while True:
-            print("\n请选择操作:")
-            print("1. 发送文字消息 (使用RSA)")
-            print("2. 发送CSV文件 (使用混合加密)")
-            print("q. 退出")
-            choice = input("请输入选项: ")
+            print(Style.BRIGHT + "\n------MENU------")
+            print(Fore.CYAN + "1. send messages(RSA)")
+            print(Fore.CYAN + "2. send csv file(hybrid encryption)")
+            print(Fore.YELLOW + "q. quit")
+            print(Fore.CYAN + "----------------" + Style.RESET_ALL)
+            choice = input(Style.BRIGHT + Fore.BLUE + "Input your choice: ")
 
             packet_to_send = None  # 初始化
 
             if choice == '1':
-                msg = input('请输入要发送给服务器的文字内容: ')
+                msg = input('Content: ')
                 if not msg: continue
                 data_bytes = msg.encode()
                 encrypted = encrypt_with_public_key(data_bytes, server_pubkey)
@@ -56,9 +58,9 @@ def main():
                 })
 
             elif choice == '2':
-                filepath = input('请输入CSV文件的路径: ')
+                filepath = input(Fore.WHITE + '请输入CSV文件的路径: ')
                 if not os.path.exists(filepath):
-                    print("文件不存在，请重新输入。")
+                    print(Fore.RED + "文件不存在，请重新输入。")
                     continue
                 with open(filepath, 'rb') as f:
                     file_content = f.read()
@@ -79,19 +81,20 @@ def main():
                 print(f"文件 '{os.path.basename(filepath)}' 已使用混合加密发送。")
 
             elif choice.lower() == 'q':
+                print(Fore.YELLOW + "client closing...")
                 break
             else:
-                print("无效选项。")
+                print(Fore.RED + "无效选项。")
                 continue
 
             if packet_to_send:
                 send_message(s, packet_to_send)
 
             response = s.recv(4096)
-            print('服务器回应:', response.decode(errors='ignore'))
+            print(Fore.GREEN + '服务器回应:', response.decode(errors='ignore'))
 
     except Exception as e:
-        print(f"出现异常: {e}")
+        print(Fore.RED + f"出现异常: {e}")
     finally:
         s.close()
 
