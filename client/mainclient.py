@@ -36,11 +36,11 @@ def main():
 
     try:
         while True:
-            print(Style.BRIGHT + "\n------MENU------")
+            print(Style.BRIGHT + Fore.LIGHTCYAN_EX + "-----------MENU-----------")
             print(Fore.CYAN + "1. send messages(RSA)")
             print(Fore.CYAN + "2. send csv file(hybrid encryption)")
             print(Fore.YELLOW + "q. quit")
-            print(Fore.CYAN + "----------------" + Style.RESET_ALL)
+            print(Fore.LIGHTCYAN_EX + "--------------------------" + Style.RESET_ALL)
             choice = input(Style.BRIGHT + Fore.BLUE + "Input your choice: ")
 
             packet_to_send = None  # 初始化
@@ -58,9 +58,9 @@ def main():
                 })
 
             elif choice == '2':
-                filepath = input(Fore.WHITE + '请输入CSV文件的路径: ')
+                filepath = input(Fore.WHITE + 'Input the file path: ')
                 if not os.path.exists(filepath):
-                    print(Fore.RED + "文件不存在，请重新输入。")
+                    print(Fore.RED + "File doesn't exist.")
                     continue
                 with open(filepath, 'rb') as f:
                     file_content = f.read()

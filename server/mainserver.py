@@ -58,9 +58,9 @@ def process_packet(packet: bytes):
             signature = data_dict['signature']
             data = decrypt_with_private_key(encrypted, server_privkey)
             if verify_signature(data, signature, client_pubkey):
-                return f"收到文本: {data.decode()}", True
+                return Style.BRIGHT + Fore.GREEN + f"收到文本: {data.decode()}", True
             else:
-                return '[文本签名验证失败]', False
+                return Style.BRIGHT + Fore.RED + '[文本签名验证失败]', False
 
         elif packet_type == 'file':
             encrypted_session_key = data_dict['encrypted_session_key']
@@ -72,7 +72,7 @@ def process_packet(packet: bytes):
             decrypted_content = decrypt_with_aes(encrypted_content, nonce, tag, session_key)
 
             if decrypted_content is None:
-                return "[文件解密或完整性验证失败]", False
+                return Style.BRIGHT + Fore.RED + "[文件解密或完整性验证失败]", False
 
             signature = data_dict['signature']
             if verify_signature(decrypted_content, signature, client_pubkey):
@@ -80,13 +80,13 @@ def process_packet(packet: bytes):
                 save_path = os.path.join(RECEIVED_FILES_DIR, filename)
                 with open(save_path, 'wb') as f:
                     f.write(decrypted_content)
-                return f"收到文件 '{filename}' 并成功解密保存。", True
+                return Style.BRIGHT + Fore.GREEN + f"收到文件 '{filename}' 并成功解密保存。", True
             else:
                 return '[文件签名验证失败]', False
         else:
-            return '[未知数据包类型]', False
+            return Style.BRIGHT + Fore.RED + '[未知数据包类型]', False
     except Exception as e:
-        return f'[处理数据包时出现异常: {e}]', False
+        return Style.BRIGHT + Fore.RED + f'[处理数据包时出现异常: {e}]', False
 
 
 def main():
@@ -94,7 +94,7 @@ def main():
     s.bind((HOST, PORT))
     s.listen(1)
 
-    print(Style.BRIGHT + Fore.CYAN + f"Server starts，waiting connection on: {HOST}:{PORT}")
+    print(Style.BRIGHT + Fore.LIGHTBLUE_EX + f"Server starts，waiting connection on: {HOST}:{PORT}")
     conn, addr = s.accept()
     print(f"连接来自: {addr}")
 
